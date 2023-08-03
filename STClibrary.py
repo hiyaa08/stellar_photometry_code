@@ -24,6 +24,41 @@ def astronomy_plot(image_array):
     plt.imshow(image_array, origin='lower', norm=simple_norm(image_array, 'log', log_a = 1000))
     return
 
+def get_red_from_nef(image):
+    original_image = image
+    delete_rows = np.arange(1, 4016, 2)
+    delete_cols = np.arange(1, 6016, 2)
+    temp_image = np.delete(original_image, (delete_rows), axis=0)
+    temp_image = np.delete(temp_image, (delete_cols), axis=1)
+    return temp_image
+
+def get_blue_from_nef(image):
+    original_image = image
+    delete_rows = np.arange(0, 4016, 2)
+    delete_cols = np.arange(0, 6016, 2)
+    temp_image = np.delete(original_image, (delete_rows), axis=0)
+    temp_image = np.delete(temp_image, (delete_cols), axis=1)
+    return temp_image
+
+def get_green_from_nef(image):
+    original_image = image
+    
+    delete_rows_1 = np.arange(1, 4016, 2)
+    delete_cols_1 = np.arange(0, 6016, 2)
+    delete_rows_2 = np.arange(0, 4016, 2)
+    delete_cols_2 = np.arange(1, 6016, 2)
+    
+    temp_image_1 = np.delete(original_image, (delete_rows_1), axis=0)
+    temp_image_1 = np.delete(temp_image_1, (delete_cols_1), axis=1)
+    
+    temp_image_2 = np.delete(original_image, (delete_rows_2), axis=0)
+    temp_image_2 = np.delete(temp_image_2, (delete_cols_2), axis=1)
+    
+    final_array = [temp_image_1, temp_image_2] #created just for calculating the mean along an axis
+    final_image = np.mean(final_array, axis=0)
+    
+    return final_image
+
 # modified get_data function that can accept .NEF files and return R, G, B arrays 
 def get_data(file, nikon=False):
     if nikon == False:
@@ -35,21 +70,12 @@ def get_data(file, nikon=False):
         rawpy_object = rawpy.imread(file)
         raw_image = rawpy_object.raw_image
         raw_colors = rawpy_object.raw_colors
-        R, G_1, B, G_2 = 0, 1, 2, 3
         
-        red_mask = np.array(raw_colors == R)
-        blue_mask = np.array(raw_colors == B)
-        green_mask_1 = np.array(raw_colors == G_1)
-        green_mask_2 = np.array(raw_colors == G_2)
+        red_image = get_red_from_nef(raw_image)
+        green_image = get_green_from_nef(raw_image)
+        blue_image = get_blue_from_nef(raw_image)
         
-        red_image = raw_image * red_mask
-        blue_image = raw_image * blue_mask
-        green_image_1 = raw_image * green_mask_1
-        green_image_2 = raw_image * green_mask_2
-        
-        green_image_array = np.array([green_image_1, green_image_2])
-        green_image_avg = np.mean(green_image_array, axis = 0)
-        return red_image, green_image_avg, blue_image
+        return red_image, green_image, blue_image
 
 
 # ## get_counts (returns counts of a star)
