@@ -19,11 +19,32 @@ from scipy.signal import savgol_filter
 
 # In[2]:
 
-
-# function which gets the data of the file
-def get_data(file):
-    data = fits.getdata(file) #getting data using fits 
-    return data # returns 2D data array 
+# modified get_data function that can accept .NEF files and return R, G, B arrays 
+def get_data(file, nikon=False):
+    if nikon == False:
+        data = fits.getdata(file) #getting data using fits 
+        return data # returns 2D array 
+    
+    elif nikon:
+        
+        rawpy_object = rawpy.imread(file)
+        raw_image = rawpy_object.raw_image
+        raw_colors = rawpy_object.raw_colors
+        R, G_1, B, G_2 = 0, 1, 2, 3
+        
+        red_mask = np.array(raw_colors == R)
+        blue_mask = np.array(raw_colors == B)
+        green_mask_1 = np.array(raw_colors == G_1)
+        green_mask_2 = np.array(raw_colors == G_2)
+        
+        red_image = raw_image * red_mask
+        blue_image = raw_image * blue_mask
+        green_image_1 = raw_image * green_mask_1
+        green_image_2 = raw_image * green_mask_2
+        
+        green_image_array = np.array([green_image_1, green_image_2])
+        green_image_avg = np.mean(green_image_array, axis = 0)
+        return red_image, green_image_avg, blue_image
 
 
 # ## get_counts (returns counts of a star)
