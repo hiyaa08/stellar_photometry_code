@@ -13,11 +13,16 @@ from astropy.io import fits
 from astropy.visualization import simple_norm
 
 from scipy.signal import savgol_filter
-
+import rawpy
 
 # ## get_data (returns data from a given filename)
 
 # In[2]:
+
+# creating a function for plotting astronomical images
+def astronomy_plot(image_array):
+    plt.imshow(image_array, origin='lower', norm=simple_norm(image_array, 'log', log_a = 1000))
+    return
 
 # modified get_data function that can accept .NEF files and return R, G, B arrays 
 def get_data(file, nikon=False):
