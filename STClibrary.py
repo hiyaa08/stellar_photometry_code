@@ -16,6 +16,8 @@ from scipy.signal import savgol_filter
 import rawpy
 
 camera_name = input('Please enter the camera name: "stc7" or "nikon d5600" ')
+if camera_name != 'stc7' and camera_name != 'nikon d5600':
+    raise NameError('Invalid camera name')
 print(f'The camera you have chosen is {camera_name}') 
 
 # ## get_data (returns data from a given filename)
@@ -23,8 +25,8 @@ print(f'The camera you have chosen is {camera_name}')
 # In[2]:
 
 # creating a function for plotting astronomical images
-def astronomy_plot(image_array):
-    plt.imshow(image_array, origin='lower', norm=simple_norm(image_array, 'log', log_a = 1000))
+def astronomy_plot(image_array, cmap=None):
+    plt.imshow(image_array, origin='lower', cmap = cmap, norm=simple_norm(image_array, 'log', log_a = 1000))
     return
 
 # this function is explained below
@@ -359,7 +361,7 @@ def f_lambda(x):
 def get_star_mags(ref_counts, targ_counts, ref_hr_num, useLum=False): 
     
     """
-    The get_star_mags function takes counts for the reference star, target star and the hr number of target star. 
+    The get_star_mags function takes counts for the reference star, target star and the hr number of reference star. 
     Returns relative RGB magnitudes of the target star.
     
     Parameters:
