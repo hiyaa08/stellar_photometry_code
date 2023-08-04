@@ -15,6 +15,9 @@ from astropy.visualization import simple_norm
 from scipy.signal import savgol_filter
 import rawpy
 
+camera_name = input('Please enter the camera name: "stc7" or "nikon d5600" ')
+print(f'The camera you have chosen is {camera_name}') 
+
 # ## get_data (returns data from a given filename)
 
 # In[2]:
@@ -24,38 +27,23 @@ def astronomy_plot(image_array):
     plt.imshow(image_array, origin='lower', norm=simple_norm(image_array, 'log', log_a = 1000))
     return
 
-def get_red_from_nef(image):
-    original_image = image
-    delete_rows = np.arange(1, 4016, 2)
-    delete_cols = np.arange(1, 6016, 2)
-    temp_image = np.delete(original_image, (delete_rows), axis=0)
-    temp_image = np.delete(temp_image, (delete_cols), axis=1)
-    return temp_image
-
-def get_blue_from_nef(image):
-    original_image = image
-    delete_rows = np.arange(0, 4016, 2)
-    delete_cols = np.arange(0, 6016, 2)
-    temp_image = np.delete(original_image, (delete_rows), axis=0)
-    temp_image = np.delete(temp_image, (delete_cols), axis=1)
-    return temp_image
-
-def get_green_from_nef(image):
-    original_image = image
-    
-    delete_rows_1 = np.arange(1, 4016, 2)
-    delete_cols_1 = np.arange(0, 6016, 2)
-    delete_rows_2 = np.arange(0, 4016, 2)
-    delete_cols_2 = np.arange(1, 6016, 2)
-    
-    temp_image_1 = np.delete(original_image, (delete_rows_1), axis=0)
-    temp_image_1 = np.delete(temp_image_1, (delete_cols_1), axis=1)
-    
-    temp_image_2 = np.delete(original_image, (delete_rows_2), axis=0)
-    temp_image_2 = np.delete(temp_image_2, (delete_cols_2), axis=1)
-    
-    final_array = [temp_image_1, temp_image_2] #created just for calculating the mean along an axis
-    final_image = np.mean(final_array, axis=0)
+# this function is explained below
+def delete_function(image):
+    for j in np.arange(0, 2):
+        for k in np.arange(0, 2):
+            if image[j, k] != 0:
+                row_index, col_index = j, k
+    if row_index == 0:
+        delete_rows = np.arange(1, 4016, 2)
+    elif row_index == 1:
+        delete_rows = np.arange(0, 4016, 2)
+    if col_index == 0:
+        delete_cols = np.arange(1, 6016, 2)
+    elif col_index == 1:
+        delete_cols = np.arange(0, 6016, 2)
+        
+    final_image = np.delete(image, (delete_rows), axis=0)
+    final_image = np.delete(final_image, (delete_cols), axis=1)
     
     return final_image
 
@@ -67,13 +55,35 @@ def get_data(file, nikon=False):
     
     elif nikon:
         
-        rawpy_object = rawpy.imread(file)
-        raw_image = rawpy_object.raw_image
-        raw_colors = rawpy_object.raw_colors
+        rawpy_object = rawpy.imread(file) # reading the NEF image with rawpy returns a rawpy object
+        raw_image = rawpy_object.raw_image # actual image array, where the R, G, B channels are arranged in a Bayer pattern
+        raw_colors = rawpy_object.raw_colors # array which tells us the color index of each pixel
         
-        red_image = get_red_from_nef(raw_image)
-        green_image = get_green_from_nef(raw_image)
-        blue_image = get_blue_from_nef(raw_image)
+        R, G_1, B, G_2 = 0, 1, 2, 3 # the index for each color, there are 2 green pixels in every 4 pixels
+        
+        red_mask = np.array(raw_colors == R) 
+        red_temp_image = red_mask * raw_image # using a mask to get an array with only the red pixels, the rest being 0
+        
+        # doing the same for all the other colors
+        green_mask_1 = np.array(raw_colors == G_1)
+        green_temp_image_1 = green_mask_1 * raw_image
+        
+        blue_mask = np.array(raw_colors == B)
+        blue_temp_image = blue_mask * raw_image
+        
+        green_mask_2 = np.array(raw_colors == G_2)
+        green_temp_image_2 = green_mask_2 * raw_image
+        
+        # using the delete function defined before to delete all the elements that are zero
+        # the function finds which rows and columns to delete, and returns an array with only the non-zero elements
+        red_image = delete_function(red_temp_image)
+        green_image_1 = delete_function(green_temp_image_1)
+        blue_image = delete_function(blue_temp_image)
+        green_image_2 = delete_function(green_temp_image_2)
+        
+        # averaging the two green images to get a final green image
+        green_array = np.array([green_image_1, green_image_2])
+        green_image = np.mean(green_array, axis=0)
         
         return red_image, green_image, blue_image
 
@@ -83,7 +93,7 @@ def get_data(file, nikon=False):
 # In[3]:
 
 
-# this function takes an individual image files 
+# this function takes an individual image array
 def get_final_counts(image_data, starpos=[None, None] , radii = np.arange(20), bg_radius = 20, N = 50, R = 100, limval=100, plot=False): 
     
     """
@@ -215,7 +225,7 @@ def get_this_dist(x, y, temp): #takes center x and y values and temporary array
 # In[7]:
 
 
-camera_name='stc7'
+# camera_name='stc7'
 
 
 # In[8]:
@@ -256,14 +266,14 @@ def get_filter_data(name):
         wavelength_G, tr_G = np.loadtxt('Green_Filter_Response_Digitized.csv', delimiter=',', unpack=True)# loading stc filter response in blue
         wavelength_B, tr_B = np.loadtxt('Blue_Filter_Response_Digitized.csv', delimiter=',', unpack=True)# loading stc filter response in lum
         
-        wavelengthLRGB = np.array([wavelength_R, wavelength_G, wavelength_B, wavelength_L])
-        trLRGB = np.array([tr_R, tr_G, tr_B, tr_L])
+        wavelengthLRGB = np.array([wavelength_R, wavelength_G, wavelength_B, wavelength_L], dtype=object)
+        trLRGB = np.array([tr_R, tr_G, tr_B, tr_L], dtype=object)
         return wavelengthLRGB, trLRGB
     
-    else:
-        raise NameError("Camera Name does not exist")
-        return -1, -1 
-
+    elif name.lower()=='nikon d5600':
+        wavelengths_nikon, m_tr_B, m_tr_G, m_tr_R = np.genfromtxt('median_sensor_response.csv', delimiter=';', unpack=True)
+        m_tr_RGB = np.array([m_tr_R, m_tr_G, m_tr_B], dtype=object)
+        return wavelengths_nikon, m_tr_RGB
 
 # In[12]:
 
