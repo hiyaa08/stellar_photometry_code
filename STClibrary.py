@@ -25,8 +25,16 @@ print(f'The camera you have chosen is {camera_name}')
 # In[2]:
 
 # creating a function for plotting astronomical images
-def astronomy_plot(image_array, cmap=None):
+def astronomy_plot(image_array, cmap=None, xlim = None, ylim = None):
     plt.imshow(image_array, origin='lower', cmap = cmap, norm=simple_norm(image_array, 'log', log_a = 1000))
+    if xlim != None:
+        plt.xlim(xlim)
+    if ylim != None:
+        plt.ylim(ylim)
+    return
+
+def plot_maxima(array):
+    plt.scatter(np.where(array == np.max(array))[1], np.where(array == np.max(array))[0])
     return
 
 # this function is explained below
@@ -76,7 +84,7 @@ def get_data(file, nikon=False):
         green_mask_2 = np.array(raw_colors == G_2)
         green_temp_image_2 = green_mask_2 * raw_image
         
-        # using the delete function defined before to delete all the elements that are zero
+        # using the delete function defined earlier to delete all the elements that are zero
         # the function finds which rows and columns to delete, and returns an array with only the non-zero elements
         red_image = delete_function(red_temp_image)
         green_image_1 = delete_function(green_temp_image_1)
@@ -91,8 +99,6 @@ def get_data(file, nikon=False):
 
 
 # ## get_counts (returns counts of a star)
-
-# In[3]:
 
 
 # this function takes an individual image array
@@ -182,7 +188,6 @@ def get_final_counts(image_data, starpos=[None, None] , radii = np.arange(20), b
     return np.mean(final_counts[-5:])
 
 
-# In[4]:
 
 
 # function which gets the center value of the 2D array; returns center_vals and temp_array
@@ -198,7 +203,6 @@ def get_center(data, lim_val=100):
     return center_y, center_x, temp_array
 
 
-# In[5]:
 
 
 # gets the counts of that particular star 
@@ -209,7 +213,6 @@ def get_counts(x, y, array, rad): #takes center x value, center y value, temp_ar
     return count, areas
 
 
-# In[6]:
 
 
 def get_this_dist(x, y, temp): #takes center x and y values and temporary array 
@@ -224,13 +227,6 @@ def get_this_dist(x, y, temp): #takes center x and y values and temporary array
 
 # ## get_star_mags (relative RGB magnitudes for STC7)
 
-# In[7]:
-
-
-# camera_name='stc7'
-
-
-# In[8]:
 
 
 # defining a function to load catalogue 
@@ -240,7 +236,7 @@ def load_catalogue():
     return df
 
 
-# In[9]:
+
 
 
 loaded = load_catalogue()
@@ -248,7 +244,7 @@ hr = loaded['HR']
 plx = loaded['Parallax']
 
 
-# In[10]:
+
 
 
 # defining a function to integrate over a curve using Reimann sum method
@@ -257,12 +253,11 @@ def integrate(x, y):
     return np.sum(y[:-1]*dx)
 
 
-# In[11]:
 
 
 # function which gets filter data according to 'camera_name'
 def get_filter_data(name):
-    if name=='stc7':
+    if name.lower()=='stc7':
         wavelength_L, tr_L = np.loadtxt('Luminance_Filter_Response_Digitized.csv', delimiter=',', unpack=True)# loading stc filter response in red
         wavelength_R, tr_R = np.loadtxt('Red_Filter_Response_Digitized.csv', delimiter=',', unpack=True)# loading stc filter response in green
         wavelength_G, tr_G = np.loadtxt('Green_Filter_Response_Digitized.csv', delimiter=',', unpack=True)# loading stc filter response in blue
@@ -277,24 +272,19 @@ def get_filter_data(name):
         m_tr_RGB = np.array([m_tr_R, m_tr_G, m_tr_B], dtype=object)
         return wavelengths_nikon, m_tr_RGB
 
-# In[12]:
-
-
 # getting quantum efficiency data if the camera is stc7 else return 1
 def get_qe(name):
-     # return quantum efficiency data if we have stc7
-    wave_qe, qe = np.loadtxt("IMX428Mono_SonyCMOS_4.5micron_7.1Mpix_QE.csv", delimiter=',', unpack=True)
-    return wave_qe, qe #all wavelengths have to be in Angstrom
+    # return quantum efficiency data for stc7, and optolong filter responses for nikon
+    if name.lower()== 'stc7':
+        wave_qe, qe = np.loadtxt("IMX428Mono_SonyCMOS_4.5micron_7.1Mpix_QE.csv", delimiter=',', unpack=True)
+        return wave_qe, qe #all wavelengths have to be in Angstrom
+    elif name.lower()== 'nikon d5600':
+        # the optolong filter responses are to be added here, for now it does nothing
+        pass
 
-
-# In[13]:
-
-
+    
 this_wave, tr_ = get_filter_data(camera_name)
 this_qe, qe = get_qe(camera_name)
-
-
-# In[14]:
 
 
 # creating interpolating fucntions for each filter response
@@ -307,10 +297,9 @@ def iblue(x):
 def ilum(x):
     return np.interp(x, this_wave[3], tr_[3])
 def iqe(x):
-    return np.interp(x, this_qe, qe)
+    return np.interp(x, this_qe, qe)    
 
 
-# In[15]:
 
 
 def T_lambda(wavelength, flux):
@@ -347,7 +336,7 @@ def T_lambda(wavelength, flux):
     return ref, calc 
 
 
-# In[16]:
+
 
 
 # flux for standard values 
@@ -355,7 +344,7 @@ def f_lambda(x):
     return 0.10885/(x**2) 
 
 
-# In[17]:
+
 
 
 def get_star_mags(ref_counts, targ_counts, ref_hr_num, useLum=False): 
@@ -434,7 +423,7 @@ def get_star_mags(ref_counts, targ_counts, ref_hr_num, useLum=False):
 
 # ## get_temp (return average temperature)
 
-# In[18]:
+
 
 
 # loading necessary information from catalogue into variables 
@@ -500,19 +489,19 @@ def get_catalogue_data(hrnum, allstd=False, allstc=False):
     return std_star, stc_star    
 
 
-# In[19]:
+
 
 
 allstc = get_catalogue_data(3, allstc=True)
 
 
-# In[20]:
+
 
 
 R, G, B, L = 0, 1, 2, 3
 
 
-# In[21]:
+
 
 
 B_R = allstc[:,B] - allstc[:,R]
@@ -520,7 +509,6 @@ G_R = allstc[:,G] - allstc[:,R]
 B_G = allstc[:,B] - allstc[:,G]
 
 
-# In[22]:
 
 
 # defining a function to get temperature from the catalogues
@@ -531,14 +519,14 @@ def get_temp():
     return T_eff
 
 
-# In[23]:
+
 
 
 # getting temperature values and storing data onto variable
 T_eff = get_temp()
 
 
-# In[24]:
+
 
 
 # sort the calculated values of BR, GR, BG wrt temperature 
@@ -549,7 +537,7 @@ def sorted_list():
     return _T_eff, _BR, _GR, _BG 
 
 
-# In[25]:
+
 
 
 def fitted_vals(plot=False):
@@ -579,7 +567,7 @@ def fitted_vals(plot=False):
     return fitted_BR, fitted_GR, fitted_BG, T_eff_this
 
 
-# In[26]:
+
 
 
 # defining a function to get all the data from a star
@@ -656,7 +644,7 @@ def get_temp(R, G, B, plot=False, color_temp=False):
 
 # ## get_abs_mag (relative magnitude to absolute magnitude conversion)
 
-# In[27]:
+
 
 
 def get_abs_mag(r, g, b, num):
@@ -701,7 +689,7 @@ def get_abs_mag(r, g, b, num):
 
 # ## get_std_mags (getting standard magnitudes from stc magnitudes)
 
-# In[28]:
+
 
 
 def f_l(X, M):
@@ -719,7 +707,7 @@ def f(X, M):
     return M[0]*x1 + M[1]*x2 + M[2]*x3 + M[3]
 
 
-# In[29]:
+
 
 
 def get_std_mags(r, g, b, l):
