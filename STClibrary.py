@@ -25,7 +25,7 @@ print(f'The camera you have chosen is {camera_name}')
 # In[2]:
 
 # creating a function for plotting astronomical images
-def astronomy_plot(image_array, cmap=None, xlim = None, ylim = None):
+def log_plot(image_array, cmap=None, xlim = None, ylim = None):
     plt.imshow(image_array, origin='lower', cmap = cmap, norm=simple_norm(image_array, 'log', log_a = 1000))
     if xlim != None:
         plt.xlim(xlim)
@@ -280,7 +280,7 @@ def get_qe(name):
         return wave_qe, qe #all wavelengths have to be in Angstrom
     elif name.lower()== 'nikon d5600':
         # the optolong filter responses are to be added here, for now it does nothing
-        pass
+        return 1, 1
 
     
 this_wave, tr_ = get_filter_data(camera_name)
@@ -375,6 +375,7 @@ def get_star_mags(ref_counts, targ_counts, ref_hr_num, useLum=False):
     ------
     red, green, blue, lum = get_star_mags(ref_counts, targ_counts, targ_hr_num, useLum=True)
     """
+    
     matching_hrs = np.where(hr==ref_hr_num)[0]
     
     hr_index = matching_hrs[0]
@@ -383,43 +384,71 @@ def get_star_mags(ref_counts, targ_counts, ref_hr_num, useLum=False):
     stcgreen = loaded['STC_G'] #loading stc green value onto variable
     stcred = loaded['STC_R'] #loading stc blue value onto variable
     stclum  = loaded['STC_L'] #loading stc lum value onto variable 
+    stdblue = loaded['standard_B'] #loading stc red value onto variable
+    stdgreen = loaded['standard_G'] #loading stc green value onto variable
+    stdred = loaded['standard_R'] #loading stc blue value onto variable
+    
     
     if not useLum:
-        R, G, B = 0, 1, 2
-        ref_red = ref_counts[R]
-        ref_green = ref_counts[G]
-        ref_blue = ref_counts[B]
-
-        targ_red = targ_counts[R]
-        targ_green = targ_counts[G]
-        targ_blue = targ_counts[B]
-
-        m_red = stcred[hr_index] -2.5*np.log10(targ_red/ref_red)
-        m_green = stcgreen[hr_index] -2.5*np.log10(targ_green/ref_green)
-        m_blue = stcblue[hr_index]-2.5*np.log10(targ_blue/ref_blue)
-
-        return m_red, m_green, m_blue
         
+        if camera_name.lower() == 'stc7':
+            
+            R, G, B = 0, 1, 2
+            ref_red = ref_counts[R]
+            ref_green = ref_counts[G]
+            ref_blue = ref_counts[B]
+
+            targ_red = targ_counts[R]
+            targ_green = targ_counts[G]
+            targ_blue = targ_counts[B]
+
+            m_red = stcred[hr_index] -2.5*np.log10(targ_red/ref_red)
+            m_green = stcgreen[hr_index] -2.5*np.log10(targ_green/ref_green)
+            m_blue = stcblue[hr_index]-2.5*np.log10(targ_blue/ref_blue)
+
+            return m_red, m_green, m_blue
+
+        elif camera_name.lower() == 'nikon d5600':
+            
+            R, G, B = 0, 1, 2
+            ref_red = ref_counts[R]
+            ref_green = ref_counts[G]
+            ref_blue = ref_counts[B]
+
+            targ_red = targ_counts[R]
+            targ_green = targ_counts[G]
+            targ_blue = targ_counts[B]
+
+            m_red = stdred[hr_index] -2.5*np.log10(targ_red/ref_red)
+            m_green = stdgreen[hr_index] -2.5*np.log10(targ_green/ref_green)
+            m_blue = stdblue[hr_index]-2.5*np.log10(targ_blue/ref_blue)
+
+            return m_red, m_green, m_blue
     else:
-        R, G, B, L = 0, 1, 2, 3
+        if camera_name.lower() == 'stc7':
+            
+            R, G, B, L = 0, 1, 2, 3
+
+            ref_red = ref_counts[R]
+            ref_green = ref_counts[G]
+            ref_blue = ref_counts[B]
+            ref_lum = ref_counts[L]
+
+            targ_red = targ_counts[R]
+            targ_green = targ_counts[G]
+            targ_blue = targ_counts[B]
+            targ_lum = targ_counts[L]
+
+            m_red = stcred[hr_index] -2.5*np.log10(targ_red/ref_red)
+            m_green = stcgreen[hr_index] -2.5*np.log10(targ_green/ref_green)
+            m_blue = stcblue[hr_index] -2.5*np.log10(targ_blue/ref_blue)
+            m_lum = stclum[hr_index] -2.5*np.log10(targ_lum/ref_lum)
+
+            return m_red, m_green, m_blue, m_lum 
         
-        ref_red = ref_counts[R]
-        ref_green = ref_counts[G]
-        ref_blue = ref_counts[B]
-        ref_lum = ref_counts[L]
-
-        targ_red = targ_counts[R]
-        targ_green = targ_counts[G]
-        targ_blue = targ_counts[B]
-        targ_lum = targ_counts[L]
-
-        m_red = stcred[hr_index] -2.5*np.log10(targ_red/ref_red)
-        m_green = stcgreen[hr_index] -2.5*np.log10(targ_green/ref_green)
-        m_blue = stcblue[hr_index] -2.5*np.log10(targ_blue/ref_blue)
-        m_lum = stclum[hr_index] -2.5*np.log10(targ_lum/ref_lum)
-
-        return m_red, m_green, m_blue, m_lum 
-
+        elif camera_name.lower() == 'nikon d5600':
+            # add code for L filter mags for nikon if available
+            pass
 
 # ## get_temp (return average temperature)
 
