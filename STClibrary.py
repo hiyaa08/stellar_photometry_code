@@ -453,8 +453,6 @@ def get_star_mags(ref_counts, targ_counts, ref_hr_num, useLum=False):
 # ## get_temp (return average temperature)
 
 
-
-
 # loading necessary information from catalogue into variables 
 def get_catalogue_data(hrnum, allstd=False, allstc=False):
     
