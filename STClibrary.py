@@ -151,18 +151,19 @@ def get_final_counts(image_data, starpos=[None, None] , radii = np.arange(20), b
     dist = get_this_dist(center_x, center_y, t_array) #getting distance values from center to individual points
     
     
+    
     for i in radii:
         mask = dist < i
         counts[i] = np.sum(t_array[mask])  #calculating the counts of the star
         area[i] = np.sum(mask) #calculating the area of the star
-
-    for i in range(0, N):
-        np.random.seed(0)
-        rand_num = np.random.randint(0, high=R) 
-        y = (R**2 - rand_num**2)**(1/2)
-        _counts[i], _area[i] = get_counts(rand_num, y, t_array, bg_radius) #calculating background counts and area
     
-
+    np.random.seed(0)
+    rand_num = np.random.randint(low=1, high=R, size=N)
+    
+    for i in range(0, N):
+        y = (R**2 - rand_num[i]**2)**(1/2)
+        _counts[i], _area[i] = get_counts(rand_num[i], y, t_array, bg_radius) #calculating background counts and area
+        
     average_bg = np.average(_counts/_area) # subtracting the background counts from the original circle 
     mult_area = area*average_bg
     final_counts = counts - mult_area #getting final counts
@@ -239,9 +240,9 @@ def load_catalogue():
 
 
 
-loaded = load_catalogue()
-hr = loaded['HR']
-plx = loaded['Parallax']
+catalogue_data = load_catalogue()
+hr = catalogue_data['HR']
+plx = catalogue_data['Parallax']
 
 
 
@@ -380,13 +381,13 @@ def get_star_mags(ref_counts, targ_counts, ref_hr_num, useLum=False):
     
     hr_index = matching_hrs[0]
     
-    stcblue = loaded['STC_B'] #loading stc red value onto variable
-    stcgreen = loaded['STC_G'] #loading stc green value onto variable
-    stcred = loaded['STC_R'] #loading stc blue value onto variable
-    stclum  = loaded['STC_L'] #loading stc lum value onto variable 
-    stdblue = loaded['standard_B'] #loading stc red value onto variable
-    stdgreen = loaded['standard_G'] #loading stc green value onto variable
-    stdred = loaded['standard_R'] #loading stc blue value onto variable
+    stcblue = catalogue_data['STC_B'] #loading stc red value onto variable
+    stcgreen = catalogue_data['STC_G'] #loading stc green value onto variable
+    stcred = catalogue_data['STC_R'] #loading stc blue value onto variable
+    stclum  = catalogue_data['STC_L'] #loading stc lum value onto variable 
+    stdblue = catalogue_data['standard_B'] #loading stc red value onto variable
+    stdgreen = catalogue_data['standard_G'] #loading stc green value onto variable
+    stdred = catalogue_data['standard_R'] #loading stc blue value onto variable
     
     
     if not useLum:
@@ -457,13 +458,13 @@ def get_star_mags(ref_counts, targ_counts, ref_hr_num, useLum=False):
 def get_catalogue_data(hrnum, allstd=False, allstc=False):
     
    
-    stdblue = loaded['standard_B'] # loading standard red value onto variable
-    stdgreen = loaded['standard_G']# loading standard green value onto variable
-    stdred = loaded['standard_R']# loading standard blue value onto variable
-    stcblue = loaded['STC_B'] #loading stc red value onto variable
-    stcgreen = loaded['STC_G'] #loading stc green value onto variable
-    stcred = loaded['STC_R'] #loading stc blue value onto variable
-    stclum  = loaded['STC_L'] #loading stc lum value onto variable
+    stdblue = catalogue_data['standard_B'] # loading standard red value onto variable
+    stdgreen = catalogue_data['standard_G']# loading standard green value onto variable
+    stdred = catalogue_data['standard_R']# loading standard blue value onto variable
+    stcblue = catalogue_data['STC_B'] #loading stc red value onto variable
+    stcgreen = catalogue_data['STC_G'] #loading stc green value onto variable
+    stcred = catalogue_data['STC_R'] #loading stc blue value onto variable
+    stclum  = catalogue_data['STC_L'] #loading stc lum value onto variable
     
     n_filters = 4
     n_stc = n_filters
@@ -520,7 +521,7 @@ def get_catalogue_data(hrnum, allstd=False, allstc=False):
 
 
 allstc = get_catalogue_data(3, allstc=True)
-
+allstd = get_catalogue_data(3, allstd=True)
 
 
 
@@ -531,18 +532,20 @@ R, G, B, L = 0, 1, 2, 3
 
 
 
-B_R = allstc[:,B] - allstc[:,R]
-G_R = allstc[:,G] - allstc[:,R]
-B_G = allstc[:,B] - allstc[:,G]
+B_R_stc = allstc[:,B] - allstc[:,R]
+G_R_stc = allstc[:,G] - allstc[:,R]
+B_G_stc = allstc[:,B] - allstc[:,G]
 
-
+B_R_M = allstd[:,B] - allstd[:,R] # making the arrays with all of the standard magnitudes (M / median used for clarity)
+G_R_M = allstd[:,G] - allstd[:,R]
+B_G_M = allstd[:,B] - allstd[:,G]
 
 
 # defining a function to get temperature from the catalogues
 def get_temp():
     T_eff = np.zeros(len(hr))
     for i in range(len(hr)):
-        T_eff[i] = loaded['Teff(K)'][i]
+        T_eff[i] = catalogue_data['Teff(K)'][i]
     return T_eff
 
 
@@ -558,12 +561,18 @@ T_eff = get_temp()
 
 # sort the calculated values of BR, GR, BG wrt temperature 
 def sorted_list():
-    _T_eff, _BR = zip(*sorted(zip(T_eff, B_R)))
-    _T_eff, _GR = zip(*sorted(zip(T_eff, G_R)))
-    _T_eff, _BG = zip(*sorted(zip(T_eff, B_G)))
-    return _T_eff, _BR, _GR, _BG 
-
-
+    _T_eff, _BR_stc = zip(*sorted(zip(T_eff, B_R_stc)))
+    _T_eff, _GR_stc = zip(*sorted(zip(T_eff, G_R_stc)))
+    _T_eff, _BG_stc = zip(*sorted(zip(T_eff, B_G_stc)))
+    
+    _T_eff, _BR_M = zip(*sorted(zip(T_eff, B_R_M)))
+    _T_eff, _GR_M = zip(*sorted(zip(T_eff, G_R_M)))
+    _T_eff, _BG_M = zip(*sorted(zip(T_eff, B_G_M)))
+    
+    if camera_name.lower() == 'stc7':
+        return _T_eff, _BR_stc, _GR_stc, _BG_stc 
+    elif camera_name.lower() == 'nikon d5600':
+        return _T_eff, _BR_M, _GR_M, _BG_M 
 
 
 
@@ -634,7 +643,16 @@ def get_temp(R, G, B, plot=False, color_temp=False):
     posGR = np.min(T_eff_func[np.where(fitted_GR < GRstar)])
     posBG = np.min(T_eff_func[np.where(fitted_BG < BGstar)])
     
+    if camera_name.lower() == 'stc7':
+        BR_color = 'blue'
+        GR_color = 'green'
+        BG_color = 'purple'
     
+    elif camera_name.lower() == 'nikon d5600':
+        BR_color = 'red'
+        GR_color = 'black'
+        BG_color = 'gold'
+        
     if(color_temp):
         print("BR value: ", posBR,"K")
         print("GR value: ", posGR,"K")
@@ -642,19 +660,19 @@ def get_temp(R, G, B, plot=False, color_temp=False):
     
     if plot==True:
          # plot B-R curve, horizontal line for BR and vertical line for temperature
-        plt.plot(T_eff_func, fitted_BR, color='blue', label='B-R')
-        plt.axhline(BRstar, color='blue', linestyle='--')
-        plt.axvline(posBR, color='blue', ls='dashdot')
+        plt.plot(T_eff_func, fitted_BR, color=BR_color, label='B-R')
+        plt.axhline(BRstar, color=BR_color, linestyle='--')
+        plt.axvline(posBR, color=BR_color, ls='dashdot')
 
         # plot G-R curve, horizontal line for GR and vertical line for temperature
-        plt.plot(T_eff_func, fitted_GR, color='green', label='G-R')
-        plt.axhline(GRstar, color='green', linestyle='--')
-        plt.axvline(posGR, color='green', ls='dashdot')
+        plt.plot(T_eff_func, fitted_GR, color=GR_color, label='G-R')
+        plt.axhline(GRstar, color=GR_color, linestyle='--')
+        plt.axvline(posGR, color=GR_color, ls='dashdot')
 
         # plot B-G curve, horizontal line for BG and vertical line for temperature
-        plt.plot(T_eff_func, fitted_BG, color='purple', label='B-G')
-        plt.axhline(BGstar, color='purple', linestyle='--')
-        plt.axvline(posBG, color='purple', ls='dashdot')
+        plt.plot(T_eff_func, fitted_BG, color=BG_color, label='B-G')
+        plt.axhline(BGstar, color=BG_color, linestyle='--')
+        plt.axvline(posBG, color=BG_color, ls='dashdot')
 
         plt.xlabel("Effective Temperature(K)")
         plt.ylabel("Colour(mag)")
