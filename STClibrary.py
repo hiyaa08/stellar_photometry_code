@@ -607,7 +607,7 @@ def fitted_vals(plot=False):
 
 
 # defining a function to get all the data from a star
-def get_temp(R, G, B, plot=False, color_temp=False):
+def get_temp(R, G, B, plot=False, color_temp=False, fig = None, ax = None, title = None):
     
     """
     The get_temp function takes red, green and blue magnitudes and returns the average temperature of the star
@@ -632,6 +632,10 @@ def get_temp(R, G, B, plot=False, color_temp=False):
     ------
     avg_temp = get_magnitudes(ref_stars_array, targ_stars_array, colour_temp=True)
     """
+    
+    if fig == None or ax==None:
+        fig, ax = plt.subplots()
+    
     BRstar = B - R
     GRstar = G - R
     BGstar = B - G
@@ -660,25 +664,25 @@ def get_temp(R, G, B, plot=False, color_temp=False):
     
     if plot==True:
          # plot B-R curve, horizontal line for BR and vertical line for temperature
-        plt.plot(T_eff_func, fitted_BR, color=BR_color, label='B-R')
-        plt.axhline(BRstar, color=BR_color, linestyle='--')
-        plt.axvline(posBR, color=BR_color, ls='dashdot')
+        ax.plot(T_eff_func, fitted_BR, color=BR_color, label='B-R: '+str(posBR)+' K')
+        ax.axhline(BRstar, color=BR_color, linestyle='--')
+        ax.axvline(posBR, color=BR_color, ls='dashdot')
 
         # plot G-R curve, horizontal line for GR and vertical line for temperature
-        plt.plot(T_eff_func, fitted_GR, color=GR_color, label='G-R')
-        plt.axhline(GRstar, color=GR_color, linestyle='--')
-        plt.axvline(posGR, color=GR_color, ls='dashdot')
+        ax.plot(T_eff_func, fitted_GR, color=GR_color, label='G-R: '+str(posGR)+ ' K')
+        ax.axhline(GRstar, color=GR_color, linestyle='--')
+        ax.axvline(posGR, color=GR_color, ls='dashdot')
 
         # plot B-G curve, horizontal line for BG and vertical line for temperature
-        plt.plot(T_eff_func, fitted_BG, color=BG_color, label='B-G')
-        plt.axhline(BGstar, color=BG_color, linestyle='--')
-        plt.axvline(posBG, color=BG_color, ls='dashdot')
+        ax.plot(T_eff_func, fitted_BG, color=BG_color, label='G-R: '+str(posGR)+ ' K')
+        ax.axhline(BGstar, color=BG_color, linestyle='--')
+        ax.axvline(posBG, color=BG_color, ls='dashdot')
 
-        plt.xlabel("Effective Temperature(K)")
-        plt.ylabel("Colour(mag)")
+        ax.set_xlabel("Effective Temperature(K)")
+        ax.set_ylabel("Colour(mag)")
+        ax.set_title(title)
 
-        plt.title("Graph to find the temperature of star")
-        plt.legend()
+        ax.legend()
         
         
     
