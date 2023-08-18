@@ -157,14 +157,24 @@ def get_final_counts(image_data, starpos=[None, None] , radii = np.arange(20), b
         counts[i] = np.sum(t_array[mask])  #calculating the counts of the star
         area[i] = np.sum(mask) #calculating the area of the star
     
-    np.random.seed(0)
-    rand_num = np.random.randint(low=1, high=R, size=N)
+    np.random.seed(1)
+    rand_num = np.random.randint(low=bg_radius, high=(2*limval-bg_radius), size=(N, 2))
     
-    for i in range(0, N):
-        y = (R**2 - rand_num[i]**2)**(1/2)
-        _counts[i], _area[i] = get_counts(rand_num[i], y, t_array, bg_radius) #calculating background counts and area
-        
-    average_bg = np.average(_counts/_area) # subtracting the background counts from the original circle 
+    for i in range(0, N):  
+        _counts[i], _area[i] = get_counts(rand_num[i][1], rand_num[i][0], t_array, bg_radius) #calculating background counts and area
+
+    
+    new_array = np.copy(_counts[:,0]) #new array with background counts
+    new_xy = np.copy(rand_num) #new array with xy coordinates of the circle
+
+    n_rem = 100
+
+    while(n_rem > 0):
+        new_array, new_xy, n_rem = clipped_array(new_array, new_xy)
+    
+
+    
+    average_bg = np.average(new_array/_area) # subtracting the background counts from the original circle 
     mult_area = area*average_bg
     final_counts = counts - mult_area #getting final counts
     
@@ -177,7 +187,6 @@ def get_final_counts(image_data, starpos=[None, None] , radii = np.arange(20), b
         axes[0].imshow(image_data, cmap = 'Greys', norm=norm, origin='lower')
         circle = plt.Circle((center_x, center_y), radii[-1], color='none', ec='white')
         axes[0].add_patch(circle)
-#         axes[0].scatter(x_max, y_max, color="yellow", fc='none', ec='white', s=2000) 
         axes[0].set_xlim(center_x-limval, center_x+limval) 
         axes[0].set_ylim(center_y-limval, center_y+limval) #plotting an image of the circle around the star for which counts have been calculated
         
