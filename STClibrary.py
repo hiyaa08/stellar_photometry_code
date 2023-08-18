@@ -235,6 +235,29 @@ def get_this_dist(x, y, temp): #takes center x and y values and temporary array
     return dist 
 
 
+def clipped_array(array, xy_array):
+    
+    float_array = array.astype('float64')
+    
+    summed = np.sum(array)
+    
+    mean_val = summed/len(array)
+    
+    std_val = np.std(array)
+    max_val = mean_val + 3*std_val
+    min_val = mean_val - 3*std_val
+    
+    mask = (array > min_val) & (array < max_val)
+    
+    n_rem = len(array) - np.sum(mask)
+    
+    clipped = array[mask]
+    
+    clipped_xy = xy_array[mask]
+    
+    
+    return clipped, clipped_xy, n_rem
+
 # ## get_star_mags (relative RGB magnitudes for STC7)
 
 
