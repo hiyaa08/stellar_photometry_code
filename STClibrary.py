@@ -102,7 +102,7 @@ def get_data(file, nikon=False):
 
 
 # this function takes an individual image array
-def get_final_counts(image_data, starpos=[None, None] , radii = np.arange(20), bg_radius = 20, N = 50, R = 100, limval=100, plot=False): 
+def get_final_counts(image_data, starpos=[None, None] , radii = np.arange(20), bg_radius = 20, N = 50, R = 100, limval=100, plot=False, bg=False): 
     
     """
     The get_final_counts function takes an image of a star and returns the counts being emitted from the star
@@ -114,12 +114,13 @@ def get_final_counts(image_data, starpos=[None, None] , radii = np.arange(20), b
     Optional Parameters:
     ---------------------
     • radii: the range of radii needed to subtract background(set to 20)
-    • starpos: array of x and y value of the position of the star, else takes brightest pixel value 
+    • starpos: list containing x and y value of the position of the star, else takes brightest pixel value 
     • bg_radius: radius of the circles used to subtract background(set to 20)
     • N: number of circles to subtract background(set to 50)
     • R: distance between the star and subtracting radius(set to 100)
     • limval: limiting value for the cropped image in the plot(set to 100)
     • plot: plots the final counts of star against the radius with the image of the circle around the star 
+    • bg: plots the circles around which the background counts are being calculated 
 
     Returns:
     --------
@@ -128,7 +129,7 @@ def get_final_counts(image_data, starpos=[None, None] , radii = np.arange(20), b
     
     Usage:
     ------
-    final_counts = get_final_counts('Mizar_image.fit', np.arange(20), bg_radius = 20, N = 50, R = 100, limval = 100, plot=True)
+    final_counts = get_final_counts('Mizar_image.fit', np.arange(20), bg_radius = 20, N = 50, R = 100, limval = 100, plot=True, bg=True)
     """
     
     center_x, center_y = starpos
@@ -171,7 +172,12 @@ def get_final_counts(image_data, starpos=[None, None] , radii = np.arange(20), b
 
     while(n_rem > 0):
         new_array, new_xy, n_rem = clipped_array(new_array, new_xy)
-    
+        if (bg):
+            norm = simple_norm(image_data, 'log', log_a=1e11)
+            plt.imshow(t_array, cmap = 'terrain', norm=norm, origin='lower')
+            this_circle = plt.Circle((new_xy[i][0], new_xy[i][1]), bg_radius, color='none', ec='white')
+            plt.gca().add_patch(this_circle)
+
 
     
     average_bg = np.average(new_array/_area) # subtracting the background counts from the original circle 
